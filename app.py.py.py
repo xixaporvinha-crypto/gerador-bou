@@ -13,12 +13,11 @@ try:
     from reportlab.pdfbase.ttfonts import TTFont
     from reportlab.pdfgen import canvas
 except ImportError:
-    st.error("ERRO: A biblioteca 'reportlab' nao esta instalada. Execute no terminal: pip install reportlab")
-    st.stop()
+    st.error("ERRO: A biblioteca 'reportlab' nao esta instalada.")
+    sys.exit(1)
 
-# Configuração da página Web
 st.set_page_config(
-    page_title="Gerador de Boletim",
+    page_title="Gerador BOU - Painel Web",
     page_icon="🛡️",
     layout="centered"
 )
@@ -32,7 +31,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Configurações de Pastas
 PASTA = os.path.dirname(os.path.abspath(__file__))
 ASSETS = os.path.join(PASTA, "assets")
 PASTA_LOGOS_BANCO = os.path.join(ASSETS, "logo_banco")
@@ -43,7 +41,6 @@ LARGURA, ALTURA = A4
 LINHA_X0 = 30.75
 LINHA_X1 = 565.50
 
-# Banco de Dados de Estados
 ESTADOS = {
     "AC": {"nome": "Acre", "governo": "GOVERNO DO ESTADO DO ACRE", "policia": "POLÍCIA CIVIL DO ESTADO DO ACRE", "endereco": "Rua Quintino Bocaiúva, 1490 - Bosque, Rio Branco - AC, 69900-640, TEL.: (68) 3212-4000", "delegacia": "Delegacia Especializada de Repressão a Crimes Cibernéticos", "origem": "Delegacia de Polícia Digital", "circunscricao": "01ª Delegacia", "investigador": "CARLOS EDUARDO MENDES OLIVEIRA", "investigador_cargo": "Investigador Policial - 112.045-1"},
     "AL": {"nome": "Alagoas", "governo": "GOVERNO DO ESTADO DE ALAGOAS", "policia": "POLÍCIA CIVIL DO ESTADO DE ALAGOAS", "endereco": "Av. Fernandes Lima, 2345 - Farol, Maceió - AL, 57050-000, TEL.: (82) 3315-2400", "delegacia": "Delegacia Especializada de Repressão a Crimes Cibernéticos", "origem": "Delegacia de Polícia Digital", "circunscricao": "01ª Delegacia", "investigador": "ROBERTO ALVES COSTA NETO", "investigador_cargo": "Investigador Policial - 223.118-4"},
@@ -100,25 +97,24 @@ def data_extenso(dt=None):
     return f"{dt.day:02d} de {MESES[dt.month]} de {dt.year} - {DIAS[dt.weekday()]} às {dt.hour:02d}:{dt.minute:02d}"
 
 def caminho_asset(uf, nome):
-    if not nome:
-        return None
+    if not nome: return None
     nome_base, ext_original = os.path.splitext(nome)
     extensoes = [ext_original, ".png", ".jpg", ".jpeg", ""]
     locais_busca = [PASTA_LOGOS_BANCO, os.path.join(PASTA_LOGOS_ESTADOS, uf.upper()), os.path.join(ASSETS, uf.upper()), ASSETS]
     for local in locais_busca:
-        if not os.path.exists(local):
-            continue
-        arquivos_no_dir = os.listdir(local)
-        for ext in extensoes:
-            alvo = f"{nome_base}{ext}".lower()
-            for arq in arquivos_no_dir:
-                if arq.lower() == alvo:
+        if not os.path.exists(local): continue
+        for arq in os.listdir(local):
+            for ext in extensoes:
+                if arq.lower() == f"{nome_base}{ext}".lower():
                     return os.path.join(local, arq)
     return None
 
 def carregar_texto_externo():
     candidatos_txt = [os.path.join(PASTA_DADOS, "dados.txt"), os.path.join(PASTA_DADOS, "dados"), os.path.join(PASTA, "dados.txt")]
-    dados_txt = {"capitulacao": "", "despacho": "", "dinamica": ""}
+    dados_txt = {
+        "capitulacao": "Art. 154-A do Código Penal . Motivo Presumido Crime Cibernético - Invasão de Dispositivo Informático",
+        "despacho": "Considerando a natureza da ocorrência, encaminhe-se este registro para o Departamento de Investigação de Crimes Cibernéticos para as devidas apurações e providências legais cabíveis."
+    }
     for caminho in candidatos_txt:
         if os.path.exists(caminho):
             try:
@@ -126,10 +122,8 @@ def carregar_texto_externo():
                     conteudo = f.read()
                 fato_match = re.search(r"FATO\s*AT[ÍI]PICO:?\s*(.*?)(?=\n\s*[A-Z\s]+:?|\Z)", conteudo, re.DOTALL | re.IGNORECASE)
                 despacho_match = re.search(r"DESPACHO\s*DA\s*AUTORIDADE:?\s*(.*?)(?=\n\s*[A-Z\s]+:?|\Z)", conteudo, re.DOTALL | re.IGNORECASE)
-                dinamica_match = re.search(r"DIN[ÂA]MICA\s*DO\s*FATO:?\s*(.*?)(?=\n\s*[A-Z\s]+:?|\Z)", conteudo, re.DOTALL | re.IGNORECASE)
                 if fato_match: dados_txt["capitulacao"] = fato_match.group(1).strip()
                 if despacho_match: dados_txt["despacho"] = despacho_match.group(1).strip()
-                if dinamica_match: dados_txt["dinamica"] = dinamica_match.group(1).strip()
                 break
             except Exception:
                 continue
@@ -187,22 +181,25 @@ def gerar_pdf_bytes(dados):
     c.drawString(M, y_from_top(268.1 + 10), f"Origem: {dados['origem']} . Circunscrição: {dados['circunscricao']}")
     linha(c, 299.1, grossa=False)
 
-    y_atual = 322.1
-    if dados.get("capitulacao"):
-        c.setFont(FONTE_B, 10)
-        c.drawString(M, y_from_top(y_atual + 10), "Fato Atípico")
-        linha(c, y_atual + 16, grossa=False)
-        c.setFont(FONTE, 10)
-        c.drawString(M, y_from_top(y_atual + 35), f"Capitulação: {dados['capitulacao']}")
-        y_atual += 65
+    # Fato Atípico
+    c.setFont(FONTE_B, 10)
+    c.drawString(M, y_from_top(322.1 + 10), "Fato Atípico")
+    linha(c, 338.1, grossa=False)
+    c.setFont(FONTE, 10)
+    c.drawString(M, y_from_top(357.3 + 10), f"Capitulação: {dados['capitulacao']}")
 
-    if dados.get("despacho"):
-        c.setFont(FONTE_B, 10)
-        c.drawString(M, y_from_top(y_atual + 10), "Despacho da Autoridade")
-        linha(c, y_atual + 16, grossa=False)
-        c.setFont(FONTE, 10)
-        c.drawString(M, y_from_top(y_atual + 35), dados["despacho"])
+    # Despacho da Autoridade
+    y_desp = 403.8
+    c.setFont(FONTE_B, 10)
+    c.drawString(M, y_from_top(y_desp + 10), "Despacho da Autoridade")
+    linha(c, y_desp + 16, grossa=False)
+    c.setFont(FONTE, 10)
+    y_texto = y_desp + 35.3
+    for ln in simpleSplit(dados["despacho"], FONTE, 10, LINHA_X1 - M):
+        c.drawString(M, y_from_top(y_texto), ln)
+        y_texto += 12
 
+    # Envolvido / Vítima
     y_env_fixo = 517.1
     c.setFont(FONTE_B, 10)
     c.drawString(M, y_from_top(y_env_fixo + 10), "Envolvido(s) na Ocorrência - Vítima")
@@ -210,7 +207,7 @@ def gerar_pdf_bytes(dados):
 
     y_nome, y_cpf, y_cel = y_env_fixo + 35.2, y_env_fixo + 57.7, y_env_fixo + 79.5
     c.setFont(FONTE_B, 10)
-    c.drawString(30.5, y_from_top(y_nome + 10), "Nome:")
+    c.drawString(30.5, y_from_top(y_nome + 10), "Nome")
     c.drawString(30.5, y_from_top(y_cpf + 10), "CPF:")
     c.drawString(30.5, y_from_top(y_cel + 10), "CELULAR:")
 
@@ -224,9 +221,23 @@ def gerar_pdf_bytes(dados):
 
     linha(c, y_cel + 52, grossa=False)
 
+    # Dinâmica do fato (Com quebra automática de linha corrigida)
+    y_din = y_cel + 68
     c.setFont(FONTE_B, 10)
-    c.drawString(M, y_from_top(y_cel + 90), "PROCEDIMENTO DE CANCELAMENTO IMEDIATO ATRAVÉS DE VALIDAÇÃO BIOMETRIA FACIAL")
-    linha(c, y_cel + 96, grossa=True)
+    c.drawString(M, y_from_top(y_din), "Dinâmica do fato")
+    linha(c, y_din + 6, grossa=True)
+    
+    c.setFont(FONTE, 10)
+    y_txt_din = y_din + 20
+    for ln in simpleSplit(dados["dinamica"], FONTE, 10, LINHA_X1 - M):
+        c.drawString(M, y_from_top(y_txt_din), ln)
+        y_txt_din += 12
+
+    # Procedimento
+    y_proc = y_txt_din + 15
+    c.setFont(FONTE_B, 10)
+    c.drawString(M, y_from_top(y_proc), "PROCEDIMENTO DE CANCELAMENTO IMEDIATO ATRAVÉS DE VALIDAÇÃO BIOMETRIA FACIAL")
+    linha(c, y_proc + 6, grossa=True)
     c.showPage()
 
     # Pagina 2
@@ -246,10 +257,7 @@ def gerar_pdf_bytes(dados):
     buffer.seek(0)
     return buffer.getvalue()
 
-
-# ==========================================
-# INTERFACE VISUAL DA PÁGINA (STREAMLIT)
-# ==========================================
+# Interface Web Streamlit
 st.markdown('<p class="titulo">Gerador de Boletim Web</p>', unsafe_allow_html=True)
 st.markdown('<p class="subtitulo">Preencha os dados abaixo para gerar e baixar o PDF oficial</p>', unsafe_allow_html=True)
 
@@ -257,10 +265,35 @@ col1, col2 = st.columns(2)
 with col1:
     uf_escolhida = st.selectbox("Selecione o Estado (UF):", UFS_ORDENADAS, format_func=lambda x: f"{x} - {ESTADOS[x]['nome']}")
 
+# Lista completa de todos os bancos do terminal
 bancos_opcoes = {
-    "Bradesco": "logo_bradesco.png", "Itaú": "logo_itau.png", "Caixa Econômica Federal": "logo_caixa.png",
-    "Banco do Brasil": "logo_bb.png", "Santander": "logo_santander.png", "Nubank": "logo_nubank.png",
-    "Banco Inter": "logo_inter.png", "C6 Bank": "logo_c6.png", "BTG Pactual": "logo_btg.png", "Sem Logo": None
+    "Bradesco": "logo_bradesco.png",
+    "Itaú": "logo_itau.png",
+    "Caixa Econômica Federal": "logo_caixa.png",
+    "Banco do Brasil": "logo_bb.png",
+    "Santander": "logo_santander.png",
+    "Nubank": "logo_nubank.png",
+    "Banco Inter": "logo_inter.png",
+    "C6 Bank": "logo_c6.png",
+    "BTG Pactual": "logo_btg.png",
+    "PagBank": "logo_pagbank.png",
+    "PagSeguro": "logo_pagseguro.png",
+    "Mercado Pago": "logo_mercadopago.png",
+    "Banco SICOOB": "logo_sicoob.png",
+    "Banco SICREDI": "logo_sicredi.png",
+    "Banco Safra": "logo_safra.png",
+    "Banrisul": "logo_banrisul.png",
+    "Banco BMG": "logo_bmg.png",
+    "Banco Pan": "logo_pan.png",
+    "Banco Original": "logo_original.png",
+    "Neon": "logo_neon.png",
+    "XP Investimentos": "logo_xp.png",
+    "Ame Digital": "logo_ame.png",
+    "PicPay": "logo_picpay.png",
+    "Banco Nordeste (BNB)": "logo_bnb.png",
+    "Banco da Amazônia (BASA)": "logo_basa.png",
+    "BRB - Banco de Brasília": "logo_brb.png",
+    "Sem Logo": None
 }
 
 with col2:
@@ -287,6 +320,11 @@ if submit_button:
         st.error("⚠️ Por favor, preencha o nome da vítima.")
     else:
         est = ESTADOS[uf_escolhida]
+        
+        # Pega o nome do banco selecionado para atualizar na dinâmica do fato automaticamente
+        banco_texto = banco_escolhido_nome.upper()
+        dinamica_personalizada = f"ACESSO INDEVIDO (INVASÃO) APP {banco_texto}, ACESSO INDEVIDO À CONTA E REMOÇÃO DO DISPOSITIVO NÃO AUTORIZADO"
+        
         dados_finais = {
             "uf": uf_escolhida,
             "numero": "025-06119/2026",
@@ -302,7 +340,7 @@ if submit_button:
             "vitima_celular": vitima_celular if vitima_celular else "(00) 00000-0000",
             "capitulacao": dados_txt_externos.get("capitulacao", ""),
             "despacho": dados_txt_externos.get("despacho", ""),
-            "dinamica": dados_txt_externos.get("dinamica", "")
+            "dinamica": dinamica_personalizada
         }
         
         try:
