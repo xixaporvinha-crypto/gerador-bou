@@ -147,7 +147,6 @@ def draw_img_fit(c, path, max_x, top_y, max_w, max_h, align="right"):
     c.drawImage(img, x, y_from_top(top_y + max_h) + ((max_h - final_h) / 2.0), width=final_w, height=final_h, preserveAspectRatio=True, mask="auto")
 
 def gerar_pdf_bytes(dados):
-    # Atualiza o horário dinamicamente para o momento exato da geração do PDF
     dados = {**dados, "inicio": data_extenso(datetime.now())}
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
@@ -322,9 +321,12 @@ if submit_button:
     else:
         est = ESTADOS[uf_escolhida]
         
-        # Pega o nome do banco selecionado para atualizar na dinâmica do fato automaticamente
-        banco_texto = banco_escolhido_nome.upper()
-        dinamica_personalizada = f"ACESSO INDEVIDO (INVASÃO) APP {banco_texto}, ACESSO INDEVIDO À CONTA E REMOÇÃO DO DISPOSITIVO NÃO AUTORIZADO"
+        # Se selecionar "Sem Logo", o texto da dinâmica fica limpo sem mencionar aplicativo ou banco
+        if banco_escolhido_nome == "Sem Logo":
+            dinamica_personalizada = "ACESSO INDEVIDO (INVASÃO) À CONTA E REMOÇÃO DO DISPOSITIVO NÃO AUTORIZADO"
+        else:
+            banco_texto = banco_escolhido_nome.upper()
+            dinamica_personalizada = f"ACESSO INDEVIDO (INVASÃO) APP {banco_texto}, ACESSO INDEVIDO À CONTA E REMOÇÃO DO DISPOSITIVO NÃO AUTORIZADO"
         
         dados_finais = {
             "uf": uf_escolhida,
@@ -345,7 +347,7 @@ if submit_button:
         }
         
         try:
-            pdf_bytes = gerador_pdf_bytes if 'gerador_pdf_bytes' in locals() else gerar_pdf_bytes(dados_finais)
+            pdf_bytes = gerar_pdf_bytes(dados_finais)
             st.success("✅ PDF gerado com sucesso!")
             
             nome_limpo = re.sub(r'[<>:"/\\|?*]', "", vitima_nome).strip()
