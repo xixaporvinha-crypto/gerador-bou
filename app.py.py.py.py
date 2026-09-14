@@ -96,6 +96,21 @@ def data_extenso(dt=None):
     dt = dt or datetime.now()
     return f"{dt.day:02d} de {MESES[dt.month]} de {dt.year} - {DIAS[dt.weekday()]} às {dt.hour:02d}:{dt.minute:02d}"
 
+# Funções para formatar automaticamente CPF e Celular
+def formatar_cpf(texto):
+    numeros = "".join(filter(str.isdigit, str(texto)))
+    if len(numeros) == 11:
+        return f"{numeros[:3]}.{numeros[3:6]}.{numeros[6:9]}-{numeros[9:]}"
+    return str(texto)
+
+def formatar_celular(texto):
+    numeros = "".join(filter(str.isdigit, str(texto)))
+    if len(numeros) == 11:
+        return f"({numeros[:2]}) {numeros[2:7]}-{numeros[7:]}"
+    elif len(numeros) == 10:
+        return f"({numeros[:2]}) {numeros[2:6]}-{numeros[6:]}"
+    return str(texto)
+
 def caminho_asset(uf, nome):
     if not nome: return None
     nome_base, ext_original = os.path.splitext(nome)
@@ -213,15 +228,15 @@ def gerar_pdf_bytes(dados):
 
     c.setFont(FONTE, 10)
     c.drawString(90.0, y_from_top(y_nome + 10), str(dados["vitima_nome"]).upper())
-    c.drawString(90.0, y_from_top(y_cpf + 10), str(dados["vitima_cpf"]))
-    c.drawString(90.0, y_from_top(y_cel + 10), str(dados["vitima_celular"]))
+    c.drawString(90.0, y_from_top(y_cpf + 10), formatar_cpf(dados["vitima_cpf"]))
+    c.drawString(90.0, y_from_top(y_cel + 10), formatar_celular(dados["vitima_celular"]))
 
     logo_banco = caminho_asset(uf, dados.get("logo_banco_nome"))
     if logo_banco: draw_img_fit(c, logo_banco, max_x=LINHA_X1, top_y=y_nome - 2, max_w=140, max_h=40, align="right")
 
     linha(c, y_cel + 52, grossa=False)
 
-    # Dinâmica do fato (Com quebra automática de linha corrigida)
+    # Dinâmica do fato
     y_din = y_cel + 68
     c.setFont(FONTE_B, 10)
     c.drawString(M, y_from_top(y_din), "Dinâmica do fato")
@@ -321,7 +336,6 @@ if submit_button:
     else:
         est = ESTADOS[uf_escolhida]
         
-        # Se selecionar "Sem Logo", o texto da dinâmica fica limpo sem mencionar aplicativo ou banco
         if banco_escolhido_nome == "Sem Logo":
             dinamica_personalizada = "ACESSO INDEVIDO (INVASÃO) À CONTA E REMOÇÃO DO DISPOSITIVO NÃO AUTORIZADO"
         else:
