@@ -313,7 +313,6 @@ with col2:
     banco_escolhido_nome = st.selectbox("Selecione a Logo do Banco:", list(bancos_opcoes.keys()))
     logo_banco_nome = bancos_opcoes[banco_escolhido_nome]
 
-# NOVO: Seleção do tipo de ocorrência/origem
 tipos_ocorrencia = [
     "Acesso Indevido à Conta",
     "Acesso Indevido ao Aplicativo",
@@ -346,7 +345,6 @@ if submit_button:
     else:
         est = ESTADOS[uf_escolhida]
         
-        # Define o texto da dinâmica com base na opção selecionada
         banco_texto = "" if banco_escolhido_nome == "Sem Logo" else f" APP {banco_escolhido_nome.upper()},"
         
         if tipo_ocorrencia_escolhida == "Acesso Indevido à Conta":
@@ -362,7 +360,8 @@ if submit_button:
         elif tipo_ocorrencia_escolhida == "Operações Não Autorizadas":
             dinamica_personalizada = f"ACESSO INDEVIDO (INVASÃO){banco_texto} OPERAÇÕES NÃO AUTORIZADAS E REMOÇÃO DO DISPOSITIVO NÃO AUTORIZADO"
         elif tipo_ocorrencia_escolhida == "Transferência Indevida":
-            dinamica_personalizada = f"ACESSO INDEVIDO (INVASÃO){banco_texto} TRANSFERÊNCIA INDEVIDA E REMOÇÃO DO DISPOSITIVO NÃO AUTORIZADO"
+            dinamick_personalizada = f"ACESSO INDEVIDO (INVASÃO){banco_texto} TRANSFERÊNCIA INDEVIDA E REMOÇÃO DO DISPOSITIVO NÃO AUTORIZADO"
+            dinamica_personalizada = dinamick_personalizada
         else:
             dinamica_personalizada = "ACESSO INDEVIDO (INVASÃO) À CONTA E REMOÇÃO DO DISPOSITIVO NÃO AUTORIZADO"
         
@@ -388,12 +387,14 @@ if submit_button:
             pdf_bytes = gerar_pdf_bytes(dados_finais)
             st.success("✅ PDF gerado com sucesso!")
             
-            nome_limpo = re.sub(r'[<>:"/\\|?*]', "", vitima_nome).strip()
+            # Ajuste para salvar com o nome "Boletim [BANCO].pdf"
+            nome_banco_arquivo = banco_escolhido_nome if banco_escolhido_nome != "Sem Logo" else "Geral"
+            nome_arquivo_pdf = f"Boletim {nome_banco_arquivo}.pdf"
             
             st.download_button(
                 label="📥 Clique aqui para baixar o PDF",
                 data=pdf_bytes,
-                file_name=f"{uf_escolhida} - {nome_limpo}.pdf",
+                file_name=nome_arquivo_pdf,
                 mime="application/pdf"
             )
         except Exception as e:
