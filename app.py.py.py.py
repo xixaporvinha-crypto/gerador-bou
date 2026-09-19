@@ -2,7 +2,7 @@ import os
 import re
 import sys
 import unicodedata
-from datetime import datetime
+from datetime import datetime, date, time
 import streamlit as st
 import io
 
@@ -92,9 +92,8 @@ FONTE, FONTE_B = _registrar_fontes()
 MESES = {1: "Janeiro", 2: "Fevereiro", 3: "Março", 4: "Abril", 5: "Maio", 6: "Junho", 7: "Julho", 8: "Agosto", 9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro"}
 DIAS = ["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado", "Domingo"]
 
-def data_extenso(dt=None):
-    dt = dt or datetime.now()
-    return f"{dt.day:02d} de {MESES[dt.month]} de {dt.year} - {DIAS[dt.weekday()]} às {dt.hour:02d}:{dt.minute:02d}"
+def formatar_data_personalizada(dt_obj):
+    return f"{dt_obj.day:02d} de {MESES[dt_obj.month]} de {dt_obj.year} - {DIAS[dt_obj.weekday()]} às {dt_obj.hour:02d}:{dt_obj.minute:02d}"
 
 def formatar_cpf(texto):
     numeros = "".join(filter(str.isdigit, str(texto)))
@@ -161,7 +160,6 @@ def draw_img_fit(c, path, max_x, top_y, max_w, max_h, align="right"):
     c.drawImage(img, x, y_from_top(top_y + max_h) + ((max_h - final_h) / 2.0), width=final_w, height=final_h, preserveAspectRatio=True, mask="auto")
 
 def gerar_pdf_bytes(dados):
-    dados = {**dados, "inicio": data_extenso(datetime.now())}
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
     M = 30.5
@@ -253,7 +251,7 @@ def gerar_pdf_bytes(dados):
     c.drawString(M, y_from_top(y_proc), "PROCEDIMENTO DE CANCELAMENTO IMEDIATO ATRAVÉS DE VALIDAÇÃO BIOMETRIA FACIAL")
     linha(c, y_proc + 6, grossa=True)
 
-    # Diligências Realizadas (Posicionado um pouco mais para baixo)
+    # Diligências Realizadas
     y_dil = y_proc + 48
     c.setFont(FONTE_B, 10)
     c.drawString(M, y_from_top(y_dil), "Diligências Realizadas")
@@ -331,6 +329,13 @@ tipos_ocorrencia = [
 ]
 tipo_ocorrencia_escolhida = st.selectbox("Selecione o Tipo de Ocorrência (Dinâmica):", tipos_ocorrencia)
 
+st.markdown('<div class="divisor">DATA E HORA DO REGISTRO</div>', unsafe_allow_html=True)
+col_d1, col_d2 = st.columns(2)
+with col_d1:
+    data_registro = st.date_input("Data do Registro:", value=date.today())
+with col_d2:
+    hora_registro = st.time_input("Hora do Registro:", value=datetime.now().time())
+
 st.markdown('<div class="divisor">DADOS DA VÍTIMA</div>', unsafe_allow_html=True)
 
 dados_txt_externos = carregar_texto_externo()
@@ -367,10 +372,13 @@ if submit_button:
         elif tipo_ocorrencia_escolhida == "Operações Não Autorizadas":
             dinamica_personalizada = f"ACESSO INDEVIDO (INVASÃO){banco_texto} OPERAÇÕES NÃO AUTORIZADAS E REMOÇÃO DO DISPOSITIVO NÃO AUTORIZADO"
         elif tipo_ocorrencia_escolhida == "Transferência Indevida":
-            dinamick_personalizada = f"ACESSO INDEVIDO (INVASÃO){banco_texto} TRANSFERÊNCIA INDEVIDA E REMOÇÃO DO DISPOSITIVO NÃO AUTORIZADO"
-            dinamica_personalizada = dinamick_personalizada
+            dinamica_personalizada = f"ACESSO INDEVIDO (INVASÃO){banco_texto} TRANSFERÊNCIA INDEVIDA E REMOÇÃO DO DISPOSITIVO NÃO AUTORIZADO"
         else:
             dinamica_personalizada = "ACESSO INDEVIDO (INVASÃO) À CONTA E REMOÇÃO DO DISPOSITIVO NÃO AUTORIZADO"
+        
+        # Junta a data e hora escolhidas pelo usuário
+        dt_combinada = datetime.combine(data_registro, hora_registro)
+        inicio_formatado = formatar_data_personalizada(dt_combinada)
         
         dados_finais = {
             "uf": uf_escolhida,
@@ -387,7 +395,8 @@ if submit_button:
             "vitima_celular": vitima_celular if vitima_celular else "(00) 00000-0000",
             "capitulacao": dados_txt_externos.get("capitulacao", ""),
             "despacho": dados_txt_externos.get("despacho", ""),
-            "dinamica": dinamica_personalizada
+            "dinamica": dinamica_personalizada,
+            "inicio": inicio_formatado
         }
         
         try:
