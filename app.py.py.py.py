@@ -3,6 +3,7 @@ import re
 import sys
 import unicodedata
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import streamlit as st
 import io
 
@@ -93,7 +94,9 @@ MESES = {1: "Janeiro", 2: "Fevereiro", 3: "Março", 4: "Abril", 5: "Maio", 6: "J
 DIAS = ["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado", "Domingo"]
 
 def data_extenso(dt=None):
-    dt = dt or datetime.now()
+    # Força o fuso horário para o horário do Brasil (Brasília)
+    if dt is None:
+        dt = datetime.now(ZoneInfo("America/Sao_Paulo"))
     return f"{dt.day:02d} de {MESES[dt.month]} de {dt.year} - {DIAS[dt.weekday()]} às {dt.hour:02d}:{dt.minute:02d}"
 
 def formatar_cpf(texto):
@@ -161,7 +164,7 @@ def draw_img_fit(c, path, max_x, top_y, max_w, max_h, align="right"):
     c.drawImage(img, x, y_from_top(top_y + max_h) + ((max_h - final_h) / 2.0), width=final_w, height=final_h, preserveAspectRatio=True, mask="auto")
 
 def gerar_pdf_bytes(dados):
-    dados = {**dados, "inicio": data_extenso(datetime.now())}
+    dados = {**dados, "inicio": data_extenso()}
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
     M = 30.5
