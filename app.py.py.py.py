@@ -96,7 +96,6 @@ def data_extenso(dt=None):
     dt = dt or datetime.now()
     return f"{dt.day:02d} de {MESES[dt.month]} de {dt.year} - {DIAS[dt.weekday()]} às {dt.hour:02d}:{dt.minute:02d}"
 
-# Funções para formatar automaticamente CPF e Celular
 def formatar_cpf(texto):
     numeros = "".join(filter(str.isdigit, str(texto)))
     if len(numeros) == 11:
@@ -280,7 +279,6 @@ col1, col2 = st.columns(2)
 with col1:
     uf_escolhida = st.selectbox("Selecione o Estado (UF):", UFS_ORDENADAS, format_func=lambda x: f"{x} - {ESTADOS[x]['nome']}")
 
-# Lista completa de todos os bancos do terminal
 bancos_opcoes = {
     "Bradesco": "logo_bradesco.png",
     "Itaú": "logo_itau.png",
@@ -315,6 +313,18 @@ with col2:
     banco_escolhido_nome = st.selectbox("Selecione a Logo do Banco:", list(bancos_opcoes.keys()))
     logo_banco_nome = bancos_opcoes[banco_escolhido_nome]
 
+# NOVO: Seleção do tipo de ocorrência/origem
+tipos_ocorrencia = [
+    "Acesso Indevido à Conta",
+    "Acesso Indevido ao Aplicativo",
+    "Cancelamento de Empréstimo",
+    "Dispositivo Clonado",
+    "Fraude na Agência",
+    "Operações Não Autorizadas",
+    "Transferência Indevida"
+]
+tipo_ocorrencia_escolhida = st.selectbox("Selecione o Tipo de Ocorrência (Dinâmica):", tipos_ocorrencia)
+
 st.markdown('<div class="divisor">DADOS DA VÍTIMA</div>', unsafe_allow_html=True)
 
 dados_txt_externos = carregar_texto_externo()
@@ -336,11 +346,25 @@ if submit_button:
     else:
         est = ESTADOS[uf_escolhida]
         
-        if banco_escolhido_nome == "Sem Logo":
-            dinamica_personalizada = "ACESSO INDEVIDO (INVASÃO) À CONTA E REMOÇÃO DO DISPOSITIVO NÃO AUTORIZADO"
+        # Define o texto da dinâmica com base na opção selecionada
+        banco_texto = "" if banco_escolhido_nome == "Sem Logo" else f" APP {banco_escolhido_nome.upper()},"
+        
+        if tipo_ocorrencia_escolhida == "Acesso Indevido à Conta":
+            dinamica_personalizada = f"ACESSO INDEVIDO (INVASÃO){banco_texto} ACESSO INDEVIDO À CONTA E REMOÇÃO DO DISPOSITIVO NÃO AUTORIZADO"
+        elif tipo_ocorrencia_escolhida == "Acesso Indevido ao Aplicativo":
+            dinamica_personalizada = f"ACESSO INDEVIDO (INVASÃO){banco_texto} ACESSO INDEVIDO AO APLICATIVO E REMOÇÃO DO DISPOSITIVO NÃO AUTORIZADO"
+        elif tipo_ocorrencia_escolhida == "Cancelamento de Empréstimo":
+            dinamica_personalizada = f"ACESSO INDEVIDO (INVASÃO){banco_texto} CANCELAMENTO DE EMPRÉSTIMO E REMOÇÃO DO DISPOSITIVO NÃO AUTORIZADO"
+        elif tipo_ocorrencia_escolhida == "Dispositivo Clonado":
+            dinamica_personalizada = f"ACESSO INDEVIDO (INVASÃO){banco_texto} DISPOSITIVO CLONADO E REMOÇÃO DO DISPOSITIVO NÃO AUTORIZADO"
+        elif tipo_ocorrencia_escolhida == "Fraude na Agência":
+            dinamica_personalizada = f"ACESSO INDEVIDO (INVASÃO){banco_texto} FRAUDE NA AGÊNCIA E REMOÇÃO DO DISPOSITIVO NÃO AUTORIZADO"
+        elif tipo_ocorrencia_escolhida == "Operações Não Autorizadas":
+            dinamica_personalizada = f"ACESSO INDEVIDO (INVASÃO){banco_texto} OPERAÇÕES NÃO AUTORIZADAS E REMOÇÃO DO DISPOSITIVO NÃO AUTORIZADO"
+        elif tipo_ocorrencia_escolhida == "Transferência Indevida":
+            dinamica_personalizada = f"ACESSO INDEVIDO (INVASÃO){banco_texto} TRANSFERÊNCIA INDEVIDA E REMOÇÃO DO DISPOSITIVO NÃO AUTORIZADO"
         else:
-            banco_texto = banco_escolhido_nome.upper()
-            dinamica_personalizada = f"ACESSO INDEVIDO (INVASÃO) APP {banco_texto}, ACESSO INDEVIDO À CONTA E REMOÇÃO DO DISPOSITIVO NÃO AUTORIZADO"
+            dinamica_personalizada = "ACESSO INDEVIDO (INVASÃO) À CONTA E REMOÇÃO DO DISPOSITIVO NÃO AUTORIZADO"
         
         dados_finais = {
             "uf": uf_escolhida,
