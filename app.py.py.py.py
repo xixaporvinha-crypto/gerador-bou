@@ -253,8 +253,8 @@ def gerar_pdf_bytes(dados):
     c.drawString(M, y_from_top(y_proc), "PROCEDIMENTO DE CANCELAMENTO IMEDIATO ATRAVÉS DE VALIDAÇÃO BIOMETRIA FACIAL")
     linha(c, y_proc + 6, grossa=True)
 
-    # Diligências Realizadas (Adicionado na primeira folha com linha em baixo)
-    y_dil = y_proc + 35
+    # Diligências Realizadas (Posicionado um pouco mais para baixo)
+    y_dil = y_proc + 48
     c.setFont(FONTE_B, 10)
     c.drawString(M, y_from_top(y_dil), "Diligências Realizadas")
     linha(c, y_dil + 6, grossa=True)
