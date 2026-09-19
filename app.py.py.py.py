@@ -252,6 +252,13 @@ def gerar_pdf_bytes(dados):
     c.setFont(FONTE_B, 10)
     c.drawString(M, y_from_top(y_proc), "PROCEDIMENTO DE CANCELAMENTO IMEDIATO ATRAVÉS DE VALIDAÇÃO BIOMETRIA FACIAL")
     linha(c, y_proc + 6, grossa=True)
+
+    # Diligências Realizadas (Adicionado na primeira folha com linha em baixo)
+    y_dil = y_proc + 35
+    c.setFont(FONTE_B, 10)
+    c.drawString(M, y_from_top(y_dil), "Diligências Realizadas")
+    linha(c, y_dil + 6, grossa=True)
+
     c.showPage()
 
     # Pagina 2
@@ -387,7 +394,6 @@ if submit_button:
             pdf_bytes = gerar_pdf_bytes(dados_finais)
             st.success("✅ PDF gerado com sucesso!")
             
-            # Ajuste para salvar com o nome "Boletim [BANCO].pdf"
             nome_banco_arquivo = banco_escolhido_nome if banco_escolhido_nome != "Sem Logo" else "Geral"
             nome_arquivo_pdf = f"Boletim {nome_banco_arquivo}.pdf"
             
